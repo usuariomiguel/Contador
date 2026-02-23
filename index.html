@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criaturas de las Sombras - Gestor de Turnos</title>
+  <style>
+    :root {
+      --bg: #111827;
+      --card: #1f2937;
+      --card-soft: #243041;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --ok: #10b981;
+      --danger: #ef4444;
+      --border: #374151;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, var(--bg), #0b1020);
+      color: var(--text);
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 560px;
+      background: rgba(17, 24, 39, 0.78);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(4px);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      color: #d1d5db;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    input {
+      flex: 1;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 0.7rem;
+      font-size: 0.95rem;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(139, 92, 246, 0.5);
+      outline-offset: 1px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 0.7rem 0.9rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.05s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .btn-main {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-main:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-ok {
+      background: var(--ok);
+      color: white;
+      width: 100%;
+      margin-bottom: 0.6rem;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+      width: 100%;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    ul {
+      list-style: none;
+      display: grid;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+
+    li {
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.95rem;
+    }
+
+    .turn-info {
+      text-align: center;
+      background: var(--card-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .turn-player {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .turn-actions {
+      color: #e5e7eb;
+      font-size: 1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      .row {
+        flex-direction: column;
+      }
+
+      .row button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Criaturas de las Sombras · Gestor de Turnos</h1>
+
+    <section id="setupPanel" class="panel">
+      <h2>Configuración de jugadores</h2>
+      <div class="row">
+        <input id="playerInput" type="text" maxlength="24" placeholder="Nombre del jugador" />
+        <button id="addPlayerBtn" class="btn-main" type="button">Añadir</button>
+      </div>
+      <ul id="playersList"></ul>
+      <button id="startGameBtn" class="btn-main" type="button" disabled>Comenzar partida</button>
+      <p class="hint">Necesitas al menos 1 jugador para iniciar.</p>
+    </section>
+
+    <section id="turnPanel" class="panel hidden">
+      <h2>Turno actual</h2>
+      <div class="turn-info">
+        <p class="turn-player" id="currentPlayerName">-</p>
+        <p class="turn-actions">Acciones restantes: <strong id="actionsLeft">4</strong></p>
+      </div>
+      <button id="useActionBtn" class="btn-ok" type="button">Gastar acción</button>
+      <button id="passTurnBtn" class="btn-main" type="button" disabled>Pasar turno</button>
+      <button id="resetGameBtn" class="btn-danger" type="button">Reiniciar partida</button>
+      <p class="hint">Cuando llegues a 0, puedes pasar turno manualmente.</p>
+    </section>
+  </main>
+
+  <script>
+    // Estado global de la partida.
+    const gameState = {
+      players: [],
+      currentPlayerIndex: 0,
+      actionsLeft: 4,
+      gameStarted: false,
+    };
+
+    const MAX_ACTIONS_PER_TURN = 4;
+    const STORAGE_KEY = "cdls-turn-manager-players";
+
+    // Referencias al DOM.
+    const playerInput = document.getElementById("playerInput");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const playersList = document.getElementById("playersList");
+    const startGameBtn = document.getElementById("startGameBtn");
+
+    const setupPanel = document.getElementById("setupPanel");
+    const turnPanel = document.getElementById("turnPanel");
+    const currentPlayerName = document.getElementById("currentPlayerName");
+    const actionsLeftLabel = document.getElementById("actionsLeft");
+    const useActionBtn = document.getElementById("useActionBtn");
+    const passTurnBtn = document.getElementById("passTurnBtn");
+    const resetGameBtn = document.getElementById("resetGameBtn");
+
+    // Renderiza la lista de jugadores en pantalla.
+    function renderPlayers() {
+      playersList.innerHTML = "";
+
+      gameState.players.forEach((name, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${index + 1}. ${name}`;
+        playersList.appendChild(li);
+      });
+
+      startGameBtn.disabled = gameState.players.length === 0;
+      persistPlayers();
+    }
+
+    // Actualiza la UI del bloque de turnos.
+    function renderTurn() {
+      const player = gameState.players[gameState.currentPlayerIndex] || "-";
+      currentPlayerName.textContent = player;
+      actionsLeftLabel.textContent = String(gameState.actionsLeft);
+
+      const noActionsLeft = gameState.actionsLeft === 0;
+      useActionBtn.disabled = noActionsLeft;
+      passTurnBtn.disabled = !noActionsLeft;
+    }
+
+    // Añade un jugador al estado si el nombre es válido.
+    function addPlayer() {
+      const name = playerInput.value.trim();
+      if (!name) return;
+
+      gameState.players.push(name);
+      playerInput.value = "";
+      playerInput.focus();
+      renderPlayers();
+    }
+
+    // Inicia la partida y posiciona el primer turno.
+    function startGame() {
+      if (gameState.players.length === 0) return;
+
+      gameState.gameStarted = true;
+      gameState.currentPlayerIndex = 0;
+      gameState.actionsLeft = MAX_ACTIONS_PER_TURN;
+
+      setupPanel.classList.add("hidden");
+      turnPanel.classList.remove("hidden");
+      renderTurn();
+    }
+
+    // Resta una acción al jugador actual sin bajar de 0.
+    function useAction() {
+      if (gameState.actionsLeft === 0) return;
+
+      gameState.actionsLeft = Math.max(0, gameState.actionsLeft - 1);
+      renderTurn();
+
+      // Paso automático cuando llega a 0.
+      if (gameState.actionsLeft === 0) {
+        setTimeout(nextTurn, 550);
+      }
+    }
+
+    // Avanza al siguiente jugador y reinicia acciones.
+    function nextTurn() {
+      if (!gameState.gameStarted || gameState.players.length === 0) return;
+
+      gameState.currentPlayerIndex =
+        (gameState.currentPlayerIndex + 1) % gameState.players.length;
+      gameState.actionsLeft = MAX_ACTIONS_PER_TURN;
+      renderTurn();
+    }
+
+    // Reinicia la partida manteniendo la lista de jugadores.
+    function resetGame() {
+      gameState.gameStarted = false;
+      gameState.currentPlayerIndex = 0;
+      gameState.actionsLeft = MAX_ACTIONS_PER_TURN;
+
+      turnPanel.classList.add("hidden");
+      setupPanel.classList.remove("hidden");
+      renderPlayers();
+    }
+
+    // Guarda jugadores en localStorage.
+    function persistPlayers() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState.players));
+    }
+
+    // Recupera jugadores guardados.
+    function hydratePlayers() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return;
+
+        gameState.players = parsed.filter((name) => typeof name === "string" && name.trim());
+      } catch {
+        gameState.players = [];
+      }
+    }
+
+    // Eventos UI.
+    addPlayerBtn.addEventListener("click", addPlayer);
+    startGameBtn.addEventListener("click", startGame);
+    useActionBtn.addEventListener("click", useAction);
+    passTurnBtn.addEventListener("click", nextTurn);
+    resetGameBtn.addEventListener("click", resetGame);
+
+    playerInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") addPlayer();
+    });
+
+    // Arranque inicial.
+    hydratePlayers();
+    renderPlayers();
+  </script>
+</body>
+</html>
