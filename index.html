@@ -294,11 +294,6 @@
 
       gameState.actionsLeft = Math.max(0, gameState.actionsLeft - 1);
       renderTurn();
-
-      // Paso automático cuando llega a 0.
-      if (gameState.actionsLeft === 0) {
-        setTimeout(nextTurn, 550);
-      }
     }
 
     // Avanza al siguiente jugador y reinicia acciones.
